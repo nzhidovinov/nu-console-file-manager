@@ -33,6 +33,8 @@
 
 Для реализации основного меню можно использовать пример ниже или написать свой
 """
+import os
+import json
 
 
 def refill(account):
@@ -57,16 +59,30 @@ def print_history(history):
         print(f'{k}: {v}')
 
 
-def operate_account():
-    account = 0
-    history = []
+def load_or_create_account_info(file_name='account_info.json'):
+    account_info = {'account': 0, 'history': []}
+    if os.path.exists(file_name):
+        with open(file_name) as f:
+            loaded_info = json.load(f)
+        account_info.update(loaded_info)
+    return account_info
 
-    print('Личный счет')
+
+def save_account_info(account_info, file_name='account_info.json'):
+    with open(file_name, 'w') as f:
+        json.dump(account_info, f)
+
+
+def operate_account(account_info):
+    account = account_info['account']
+    history = account_info['history']
+
     while True:
-        print('1. пополнение счета')
-        print('2. покупка')
-        print('3. история покупок')
-        print('4. выход')
+        print(f'Личный счет {account}')
+        print('1. Пополнение счета')
+        print('2. Покупка')
+        print('3. История покупок')
+        print('4. Выход')
 
         choice = input('Выберите пункт меню: ')
         if choice == '1':
@@ -80,6 +96,13 @@ def operate_account():
         else:
             print('Неверный пункт меню')
 
+    account_info['account'] = account
+    account_info['history'] = history
+    return account_info
+
 
 if __name__ == '__main__':
-    operate_account()
+    file_name = 'account_info.json'
+    account_info = load_or_create_account_info(file_name)
+    account_info = operate_account(account_info)
+    save_account_info(account_info, file_name)
