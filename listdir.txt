@@ -1,0 +1,12 @@
+LICENSE
+listdir.txt
+.gitignore
+account_info.json
+victory.py
+manager.py
+personal_account.py
+README.md
+__pycache__
+.pytest_cache
+.idea
+.git

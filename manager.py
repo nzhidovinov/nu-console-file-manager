@@ -2,7 +2,7 @@ import os
 import sys
 import shutil
 from victory import victory
-from personal_account import operate_account
+from personal_account import operate_account, load_or_create_account_info, save_account_info
 
 
 def get_menu_item(menu: dict, title=None) -> int:
@@ -68,14 +68,33 @@ def list_dir_command():
     print(os.listdir())
 
 
+def save_list_dir_command():
+    filename = 'listdir.txt'
+    dirs = list_only_dirs()
+    files = list_only_files()
+    with open(filename, 'w') as f:
+        for file_name in files:
+            f.write(file_name + '\n')
+        for dir_name in dirs:
+            f.write(dir_name + '\n')
+
+
+def list_only_dirs():
+    return [dir_name for dir_name in os.listdir()
+            if os.path.isdir(dir_name)]
+
+
 def list_only_dirs_command():
-    print([dir_name for dir_name in os.listdir()
-           if os.path.isdir(dir_name)])
+    print(list_only_dirs())
+
+
+def list_only_files():
+    return [dir_name for dir_name in os.listdir()
+            if os.path.isfile(dir_name)]
 
 
 def list_only_files_command():
-    print([dir_name for dir_name in os.listdir()
-           if os.path.isfile(dir_name)])
+    print(list_only_files())
 
 
 def sys_info_command():
@@ -87,7 +106,10 @@ def victory_command():
 
 
 def operate_account_command():
-    operate_account()
+    file_name = 'account_info.json'
+    account_info = load_or_create_account_info(file_name)
+    account_info = operate_account(account_info)
+    save_account_info(account_info, file_name)
 
 
 def copy_file_or_dir_command():
@@ -105,6 +127,7 @@ if __name__ == '__main__':
         'Удалить (файл/папку)': del_file_or_dir_command,
         'Копировать (файл/папку)': copy_file_or_dir_command,
         'Просмотр содержимого рабочей директории': list_dir_command,
+        'Сохранение содержимого рабочей директории': save_list_dir_command,
         'Посмотреть только папки': list_only_dirs_command,
         'Посмотреть только файлы': list_only_files_command,
         'Просмотр информации об операционной системе': sys_info_command,
