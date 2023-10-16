@@ -4,22 +4,45 @@ import shutil
 from victory import victory
 from personal_account import operate_account, load_or_create_account_info, save_account_info
 
+menu = {}
+
+
+def no_fail(fn):
+    def wrapper(input_fn, output_fn):
+        res = None
+        try:
+            res = fn(input_fn, output_fn)
+        except Exception as e:
+            output_fn(f'Ошибка: {e}')
+            return res
+    return wrapper
+
+
+def menu_item(name, input_fn=input, output_fn=print, catch_err=True):
+    # register menu item
+    def decorator(fn):
+        global menu
+        item_id = len(menu) + 1
+        fn = no_fail(fn) if catch_err else fn
+        menu[item_id] = dict(name=name, fn=fn, input_fn=input_fn, output_fn=output_fn)
+        return fn
+
+    return decorator
+
 
 def get_menu_item(menu: dict, title=None) -> int:
-    menu_items = sorted(menu, reverse=True)
-
     # print menu
     print(title)
-    for i, item in enumerate(menu_items, start=1):
-        print(f'{i:2}. {item}.')
+    for i, item in sorted(menu.items()):
+        print(f'{i:2}. {item["name"]}.')
 
     # get menu index
     while True:
         # last part of cwd
         cwd = os.path.split(os.getcwd())[-1]
         choice = int(input(f'({cwd}) Выберите пункт меню: '))
-        if 1 <= choice <= len(menu_items):
-            return menu_items[choice-1]
+        if 1 <= choice <= len(menu):
+            return choice
         else:
             print(f'Неверный пункт меню.')
 
@@ -29,113 +52,128 @@ def process(menu: dict):
         # get menu item
         menu_item = get_menu_item(menu, title='Консольный файловый менеджер')
         # process program state
-        exit_proc = menu[menu_item]()
+        item = menu[menu_item]
+        fn = item['fn']
+        input_fn = item['input_fn']
+        output_fn = item['output_fn']
+        exit_proc = fn(input_fn, output_fn)
         # exit processing
         if exit_proc:
             break
 
 
 ############################################################
+# Functions
+############################################################
+def creator_info():
+    return 'Жидовинов Никита'
+
+
+def sys_info():
+    return f'{sys.platform} {os.name}'
+
+
+def lsd():
+    return (d for d in os.listdir())
+
+
+def list_only_dirs():
+    return filter(lambda x: os.path.isdir(x), lsd())
+
+
+def list_only_files():
+    return filter(lambda x: os.path.isfile(x), lsd())
+
+
+############################################################
 # Commands
 ############################################################
-def exit_command():
-    return True
-
-
-def cwd_command():
-    new_work_dir = input('Ввыдите новую рабочую директорию: ')
+@menu_item('Смена рабочей директории')
+def cwd_command(input_fn, output_fn):
+    new_work_dir = input_fn('Ввыдите новую рабочую директорию: ')
     os.chdir(new_work_dir)
 
 
-def print_creator_command():
-    print('Жидовинов Никита.')
-
-
-def make_dir_command():
-    dir_name = input('Ввыдите имя новой папки: ')
+@menu_item('Создать папку')
+def make_dir_command(input_fn, output_fn):
+    dir_name = input_fn('Ввыдите имя новой папки: ')
     os.mkdir(dir_name)
 
 
-def del_file_or_dir_command():
-    dir_name = input('Ввыдите имя файла/папки: ')
+@menu_item('Удалить (файл/папку)')
+def del_file_or_dir_command(input_fn, output_fn):
+    dir_name = input_fn('Ввыдите имя файла/папки: ')
     if os.path.isdir(dir_name):
         os.rmdir(dir_name)
     if os.path.isfile(dir_name):
         os.remove(dir_name)
 
 
-def list_dir_command():
-    print(os.listdir())
+@menu_item('Просмотр содержимого рабочей директории')
+def list_dir_command(input_fn, output_fn):
+    for d in lsd():
+        output_fn(d)
 
 
-def save_list_dir_command():
+@menu_item('Сохранение содержимого рабочей директории')
+def save_list_dir_command(input_fn, output_fn):
     filename = 'listdir.txt'
-    dirs = list_only_dirs()
-    files = list_only_files()
     with open(filename, 'w') as f:
-        for file_name in files:
+        for file_name in list_only_dirs():
             f.write(file_name + '\n')
-        for dir_name in dirs:
+        for dir_name in list_only_files():
             f.write(dir_name + '\n')
 
 
-def list_only_dirs():
-    return [dir_name for dir_name in os.listdir()
-            if os.path.isdir(dir_name)]
+@menu_item('Посмотреть только папки')
+def list_only_dirs_command(input_fn, output_fn):
+    for i in list_only_dirs():
+        output_fn(i)
 
 
-def list_only_dirs_command():
-    print(list_only_dirs())
+@menu_item('Посмотреть только файлы')
+def list_only_files_command(input_fn, output_fn):
+    for i in list_only_files():
+        output_fn(i)
 
 
-def list_only_files():
-    return [dir_name for dir_name in os.listdir()
-            if os.path.isfile(dir_name)]
-
-
-def list_only_files_command():
-    print(list_only_files())
-
-
-def sys_info_command():
-    print(f'{sys.platform} {os.name}')
-
-
-def victory_command():
-    victory()
-
-
-def operate_account_command():
-    file_name = 'account_info.json'
-    account_info = load_or_create_account_info(file_name)
-    account_info = operate_account(account_info)
-    save_account_info(account_info, file_name)
-
-
-def copy_file_or_dir_command():
-    src = input('Введите путь к файлу/папке: ')
-    dst = input('Введите путь к папке назначения: ')
+@menu_item('Копировать (файл/папку)')
+def copy_file_or_dir_command(input_fn, output_fn):
+    src = input_fn('Введите путь к файлу/папке: ')
+    dst = input_fn('Введите путь к папке назначения: ')
     if os.path.isdir(src):
         shutil.copytree(src, dst)
     if os.path.isfile(src):
         shutil.copy(src, dst)
 
 
-if __name__ == '__main__':
-    menu = {
-        'Создать папку': make_dir_command,
-        'Удалить (файл/папку)': del_file_or_dir_command,
-        'Копировать (файл/папку)': copy_file_or_dir_command,
-        'Просмотр содержимого рабочей директории': list_dir_command,
-        'Сохранение содержимого рабочей директории': save_list_dir_command,
-        'Посмотреть только папки': list_only_dirs_command,
-        'Посмотреть только файлы': list_only_files_command,
-        'Просмотр информации об операционной системе': sys_info_command,
-        'Создатель программы': print_creator_command,
-        'Играть в викторину': victory_command,
-        'Мой банковский счет': operate_account_command,
-        'Смена рабочей директории': cwd_command,
-        'Bыход': exit_command
-    }
+@menu_item('Играть в викторину')
+def victory_command(input_fn, output_fn):
+    victory(input_fn, output_fn)
 
+
+@menu_item('Мой банковский счет')
+def operate_account_command(input_fn, output_fn):
+    file_name = 'account_info.json'
+    account_info = load_or_create_account_info(file_name)
+    account_info = operate_account(account_info, input_fn, output_fn)
+    save_account_info(account_info, file_name)
+
+
+@menu_item('Создатель программы')
+def print_creator_command(input_fn, output_fn):
+    output_fn(creator_info())
+
+
+@menu_item('Просмотр информации об операционной системе')
+def sys_info_command(input_fn, output_fn):
+    output_fn(sys_info())
+
+
+@menu_item('Bыход')
+def exit_command(input_fn, output_fn):
+    return True
+
+
+if __name__ == '__main__':
     process(menu)
