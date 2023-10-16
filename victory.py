@@ -10,23 +10,23 @@ questions = {
 }
 
 
-def victory():
+def victory(input_fn=input, output_fn=print):
     total = 5
     curr_answered = 0
     actual_questions = random.sample(sorted(questions), total)
 
-    print('Викторина начинается!')
+    output_fn('Викторина начинается!')
     for q in actual_questions:
-        ans = input(q)
+        ans = input_fn(q)
         if ans != questions[q][0]:
-            print(f'Правильный ответ: {questions[q][1]}')
+            output_fn(f'Правильный ответ: {questions[q][1]}')
         else:
             curr_answered += 1
 
-    print('Количество правильных ответов: ', curr_answered)
-    print('Количество ошибок: ', total - curr_answered)
-    print('Процент правильных ответов: ', 100 * curr_answered / total)
-    print('Процент неправильных ответов: ', 100*(1 - curr_answered / total))
+    output_fn('Количество правильных ответов: ', curr_answered)
+    output_fn('Количество ошибок: ', total - curr_answered)
+    output_fn('Процент правильных ответов: ', 100 * curr_answered / total)
+    output_fn('Процент неправильных ответов: ', 100*(1 - curr_answered / total))
 
 
 if __name__ == '__main__':

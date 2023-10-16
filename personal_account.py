@@ -37,26 +37,26 @@ import os
 import json
 
 
-def refill(account):
-    val = float(input('Введите сумму пополнения: '))
+def refill(account, input_fn=input, output_fn=print):
+    val = float(output_fn('Введите сумму пополнения: '))
     account += val
     return account
 
 
-def purchase(account, history):
-    val = float(input('Введите сумму покуаки: '))
+def purchase(account, history, input_fn=input, output_fn=print):
+    val = float(input_fn('Введите сумму покуаки: '))
     if val > account:
-        print('Не достаточно денег на счету.')
+        output_fn('Не достаточно денег на счету.')
     else:
-        name = input('Название покупки: ')
+        name = input_fn('Название покупки: ')
         account -= val
         history.append((name, val))
     return account, history
 
 
-def print_history(history):
+def print_history(history, input_fn=input, output_fn=print):
     for k, v in history:
-        print(f'{k}: {v}')
+        output_fn(f'{k}: {v}')
 
 
 def load_or_create_account_info(file_name='account_info.json'):
@@ -73,28 +73,28 @@ def save_account_info(account_info, file_name='account_info.json'):
         json.dump(account_info, f)
 
 
-def operate_account(account_info):
+def operate_account(account_info, input_fn=input, output_fn=print):
     account = account_info['account']
     history = account_info['history']
 
     while True:
-        print(f'Личный счет {account}')
-        print('1. Пополнение счета')
-        print('2. Покупка')
-        print('3. История покупок')
-        print('4. Выход')
+        output_fn(f'Личный счет {account}')
+        output_fn('1. Пополнение счета')
+        output_fn('2. Покупка')
+        output_fn('3. История покупок')
+        output_fn('4. Выход')
 
-        choice = input('Выберите пункт меню: ')
+        choice = input_fn('Выберите пункт меню: ')
         if choice == '1':
-            account = refill(account)
+            account = refill(account, input_fn, output_fn)
         elif choice == '2':
-            account, history = purchase(account, history)
+            account, history = purchase(account, history, input_fn, output_fn)
         elif choice == '3':
-            print_history(history)
+            print_history(history, input_fn, output_fn)
         elif choice == '4':
             break
         else:
-            print('Неверный пункт меню')
+            output_fn('Неверный пункт меню')
 
     account_info['account'] = account
     account_info['history'] = history
